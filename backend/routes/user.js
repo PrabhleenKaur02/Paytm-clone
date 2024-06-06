@@ -1,12 +1,14 @@
 const express = require("express");
 const zod = require("zod");
-const User = require('../db')
+const { User, Account } = require('../db')
 const jwt = require("jsonwebtoken");
 const JWT_SECRET = require('../config');
-const { authMiddleware } = require('../middleware');
+const authMiddleware = require('../middleware');
 
 const router = express.Router();
 
+
+// USER SIGNUP
 const signupSchema = zod.object({
     username: zod.string(),
     firstName: zod.string(),
@@ -14,7 +16,6 @@ const signupSchema = zod.object({
     password: zod.string()
 })
 
-// USER SIGNUP
 router.post('/signup', async(req, res) => {
     const body = req.body;
     const {success} = signupSchema.safeParse(req.body);
@@ -37,6 +38,13 @@ router.post('/signup', async(req, res) => {
       } else {
 
         const newUser = await User.create(body);
+
+        // create new account
+        await Account.create({
+            userId,
+            balance: 1 + Math.random() * 10000
+      })
+
         const token = jwt.sign({
             userId: newUser._id
         }, JWT_SECRET)
@@ -57,26 +65,22 @@ router.post('/signup', async(req, res) => {
 
 // USER SIGNIN 
 const signinSchema = zod.object({
-    username: zod.string(),
+    username: zod.string().email(),
     password: zod.string()
 })
 
-const {success} = signinSchema.safeParse(req.body);
-
+    router.post('/signin', async(req, res) => {
+        
+    const {success} = signinSchema.safeParse(req.body);
     if(!success) {
-        res.status(411).json({
-            msg: "Incorrect inputs"
-        });
+    res.status(411).json({
+        msg: "Incorrect inputs"
+       });
     }
 
-    router.post('/signin', async(req, res) => {
-    const body = req.body({
-        username,
-        password
-    });
-  
     const user = await User.findOne({
-        username: body.username
+        username: req.body.username,
+        password: req.body.password
     })
 
    try {
@@ -110,18 +114,27 @@ const updateBody = zod.object({
 
 router.put('/', authMiddleware, async(req, res) => {
       const {success} = updateBody.safeParse(req.body)
-      if(!success) {
-        res.status(411).json({
-            msg: "Error while updating"
-        });
-      } 
-      await User.updateOne(req.body, {
-        id: req.userId
-      });
 
-      res.json({
-        msg: "Updated successfully!"
-      })
+      try {
+        if(!success) {
+            res.status(411).json({
+                msg: "Error while updating"
+            })
+          };
+
+          await User.updateOne(req.body, {
+            id: req.userId
+          });
+    
+          res.json({
+            msg: "Updated successfully!"
+          });
+      } catch (error) {
+        res.status(411).json({
+                msg: "Error while updating. Try again later"
+            })
+      };
+     
 });
 
 // SEARCH/FILTER USERS
@@ -149,7 +162,7 @@ router.get('/bulk', async(req, res) => {
             _id: user._id
         }))
     });
-    
+
 });
 
 
