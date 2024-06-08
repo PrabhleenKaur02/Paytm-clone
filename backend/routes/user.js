@@ -1,11 +1,10 @@
 const express = require("express");
+const router = express.Router();
 const zod = require("zod");
 const { User, Account } = require('../db')
 const jwt = require("jsonwebtoken");
 const JWT_SECRET = require('../config');
 const authMiddleware = require('../middleware');
-
-const router = express.Router();
 
 
 // USER SIGNUP
@@ -17,6 +16,7 @@ const signupSchema = zod.object({
 })
 
 router.post('/signup', async(req, res) => {
+    console.log('Request received:', req.body);
     const body = req.body;
     const {success} = signupSchema.safeParse(req.body);
 
@@ -38,6 +38,7 @@ router.post('/signup', async(req, res) => {
       } else {
 
         const newUser = await User.create(body);
+        const userId = newUser._id;
 
         // create new account
         await Account.create({
@@ -56,6 +57,7 @@ router.post('/signup', async(req, res) => {
       }
 
     } catch (error) {
+        console.error('Error during registration:', error);
         res.status(411).json({
             error: "signup failed. please try again later"
         })
@@ -67,10 +69,10 @@ router.post('/signup', async(req, res) => {
 const signinSchema = zod.object({
     username: zod.string().email(),
     password: zod.string()
-})
+});
 
     router.post('/signin', async(req, res) => {
-        
+       
     const {success} = signinSchema.safeParse(req.body);
     if(!success) {
     res.status(411).json({
@@ -106,29 +108,33 @@ const signinSchema = zod.object({
 });
 
 // UPDATE USER INFORMATION
-const updateBody = zod.object({
-    password: zod.string().optional(),
-    firstName: zod.string().optional(),
-    lastName: zod.string().optional()
-});
 
 router.put('/', authMiddleware, async(req, res) => {
+    const updateBody = zod.object({
+        password: zod.string().optional(),
+        firstName: zod.string().optional(),
+        lastName: zod.string().optional()
+    });
+    
       const {success} = updateBody.safeParse(req.body)
+      updatedData = req.body;
 
       try {
         if(!success) {
             res.status(411).json({
                 msg: "Error while updating"
             })
-          };
+          }
+          else {
+            await User.updateOne({
+            _id: req.userId
+          }, { $set: updatedData});
 
-          await User.updateOne(req.body, {
-            id: req.userId
-          });
     
           res.json({
             msg: "Updated successfully!"
           });
+        }
       } catch (error) {
         res.status(411).json({
                 msg: "Error while updating. Try again later"
