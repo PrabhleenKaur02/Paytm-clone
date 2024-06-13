@@ -3,14 +3,13 @@ import React, { useState } from 'react'
 import { useSearchParams } from 'react-router-dom';
 
 const SendMoney = () => {
-    // const [searchParams] = useSearchParams();
-    // const id = searchParams.get("id");
-    // const name = searchParams.get("name");
-    // const [amount, setAmount] = useState(0);
-    const name = "john";
+    const [searchParams] = useSearchParams();
+    const id = searchParams.get("id");
+    const name = searchParams.get("name");
+    const [amount, setAmount] = useState(0);
 
-    const transferSubmit = async() => {
-           await axios.post("http://localhost:3000/api/v1/account/transfer", {
+    const transferSubmit = () => {
+            axios.post("http://localhost:3000/api/v1/account/transfer", {
                 to: id,
                 amount
             }, {

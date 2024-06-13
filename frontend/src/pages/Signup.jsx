@@ -26,7 +26,7 @@ const Signup = () => {
     navigate("/dashboard")
     console.log("hello")
   }
-
+ 
   return (
     <div className='bg-slate-300 h-screen flex justify-center'>
         <div className='flex flex-col justify-center'>

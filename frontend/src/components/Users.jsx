@@ -9,9 +9,13 @@ const Users = () => {
     const [filter, setFilter] = useState("");
 
     useEffect(() => {
-        axios.get("http://localhost:3000/api/v1/user/bulk?filter=" + filter).then(response => {
-            setUsers(response.data.user)
-        })
+        
+        const getdata = setTimeout(() => {
+            axios.get("http://localhost:3000/api/v1/user/bulk?filter=" + filter).then(response => {
+                setUsers(response.data.user)
+            })
+        }, 2000)
+        
     }, [filter])
 
     return <div>
@@ -22,7 +26,7 @@ const Users = () => {
             }} type='text' placeholder='Search users...' className='w-full px-2 py-1 border rounded border-slate-200' />
         </div>
         <div>
-            {users.map(user => <User user={user} />)}
+            {users.map(user => <User key={user._id} user={user} />)}
         </div>
     </div>
 }
